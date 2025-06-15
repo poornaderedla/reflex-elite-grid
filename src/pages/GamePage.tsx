@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
@@ -20,6 +19,9 @@ import SensationGame from "@/games/SensationGame";
 import SwipeGame from "@/games/SwipeGame";
 import ExcessCellsGame from "@/games/ExcessCellsGame";
 import AimingGame from "@/games/AimingGame";
+import LongestLineGame from "@/games/LongestLineGame";
+import MemoryGame from "@/games/MemoryGame";
+import PeripheralVisionGame from "@/games/PeripheralVisionGame";
 
 const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorChange: 0.20,      // 0.20s world average for "Color Change"
@@ -36,6 +38,9 @@ const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   swipe: 0.40,            // 0.40s for swipe reaction
   excessCells: 25.00,     // 25s for excess cells
   aiming: 0.50,           // 0.50s for aiming targets
+  longestLine: 2.00,        // 2s average for line identification
+  memory: 45.00,           // 45s average for memory matching
+  peripheralVision: 3.00,   // 3s average for peripheral number identification
 };
 
 const GamePage: React.FC = () => {
@@ -112,6 +117,12 @@ const GamePage: React.FC = () => {
         return <ExcessCellsGame onFinish={handleGameEnd} />;
       case "aiming":
         return <AimingGame onFinish={handleGameEnd} />;
+      case "longestLine":
+        return <LongestLineGame onFinish={handleGameEnd} />;
+      case "memory":
+        return <MemoryGame onFinish={handleGameEnd} />;
+      case "peripheralVision":
+        return <PeripheralVisionGame onFinish={handleGameEnd} />;
       default:
         return <div>Game component not available</div>;
     }

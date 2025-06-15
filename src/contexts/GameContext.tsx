@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { GameType, GameResult, Game } from "@/types/game";
 
@@ -114,6 +113,27 @@ const GAMES: Game[] = [
     description: "Hit targets quickly",
     instructions: "Tap on the targets as they appear. Smaller targets give more points.",
     icon: "🎯",
+  },
+  {
+    id: "longestLine",
+    name: "The Longest Line",
+    description: "Find and tap the longest visible line",
+    instructions: "Look at all the lines on screen and tap the longest one as quickly as possible.",
+    icon: "📏",
+  },
+  {
+    id: "memory",
+    name: "Memory Match",
+    description: "Find and match identical hidden cells",
+    instructions: "Flip cards to reveal symbols and match identical pairs. Complete all matches to win.",
+    icon: "🧠",
+  },
+  {
+    id: "peripheralVision",
+    name: "Peripheral Vision",
+    description: "Identify the largest number from screen edges",
+    instructions: "Focus on the center while remembering the largest number shown at the screen edges.",
+    icon: "👁️",
   },
 ];
 

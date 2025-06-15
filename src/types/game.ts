@@ -12,7 +12,10 @@ export type GameType =
   | "sensation"
   | "swipe"
   | "excessCells"
-  | "aiming";
+  | "aiming"
+  | "longestLine"
+  | "memory"
+  | "peripheralVision";
 
 export interface Game {
   id: GameType;
