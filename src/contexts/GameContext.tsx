@@ -205,6 +205,48 @@ const GAMES: Game[] = [
     instructions: "Memorize the numbers shown and calculate their sum as quickly as possible.",
     icon: "➕",
   },
+  {
+    id: "shake",
+    name: "Shake",
+    description: "Just for fun",
+    instructions: "Shake your device as fast as you can. This game requires a device with an accelerometer.",
+    icon: "📳",
+  },
+  {
+    id: "numbersOrder",
+    name: "Numbers Order",
+    description: "Click numbers in a specific order",
+    instructions: "Tap the numbers in ascending order (1, 2, 3, ...) as quickly as possible.",
+    icon: "🔢",
+  },
+  {
+    id: "selection",
+    name: "Selection",
+    description: "Select the right number",
+    instructions: "A target number will be shown. Select the matching number from the options below.",
+    icon: "✅",
+  },
+  {
+    id: "swipe2",
+    name: "Swipe 2.0",
+    description: "A sequence of swipes",
+    instructions: "Follow the sequence of swipe directions shown on screen. Be fast and precise!",
+    icon: "↔️",
+  },
+  {
+    id: "colorChange2",
+    name: "Color Change 2.0",
+    description: "React on color change",
+    instructions: "Tap the screen only when the color changes to the target color shown at the start.",
+    icon: "🎨",
+  },
+  {
+    id: "rotation",
+    name: "Rotation",
+    description: "Find the points after the rotation",
+    instructions: "Memorize the pattern, then identify the correctly rotated version from the options.",
+    icon: "🔄",
+  },
 ];
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ 

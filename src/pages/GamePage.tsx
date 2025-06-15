@@ -32,6 +32,12 @@ import SameShapesGame from "@/games/SameShapesGame";
 import ColorFramesCountGame from "@/games/ColorFramesCountGame";
 import FastClickGame from "@/games/FastClickGame";
 import More100Game from "@/games/More100Game";
+import ShakeGame from "@/games/ShakeGame";
+import NumbersOrderGame from "@/games/NumbersOrderGame";
+import SelectionGame from "@/games/SelectionGame";
+import Swipe2Game from "@/games/Swipe2Game";
+import ColorChange2Game from "@/games/ColorChange2Game";
+import RotationGame from "@/games/RotationGame";
 
 const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorChange: 0.20,      // 0.20s world average for "Color Change"
@@ -61,6 +67,12 @@ const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorFramesCount: 5.00,    // 5s average including observation time
   fastClick: 0.60,           // 0.6s average for color button reaction
   more100: 6.00,             // 6s average for mental math calculation
+  shake: 10.00,
+  numbersOrder: 5.00,
+  selection: 1.50,
+  swipe2: 4.00,
+  colorChange2: 0.22,
+  rotation: 3.50,
 };
 
 const GamePage: React.FC = () => {
@@ -163,6 +175,18 @@ const GamePage: React.FC = () => {
         return <FastClickGame onFinish={handleGameEnd} />;
       case "more100":
         return <More100Game onFinish={handleGameEnd} />;
+      case "shake":
+        return <ShakeGame onFinish={handleGameEnd} />;
+      case "numbersOrder":
+        return <NumbersOrderGame onFinish={handleGameEnd} />;
+      case "selection":
+        return <SelectionGame onFinish={handleGameEnd} />;
+      case "swipe2":
+        return <Swipe2Game onFinish={handleGameEnd} />;
+      case "colorChange2":
+        return <ColorChange2Game onFinish={handleGameEnd} />;
+      case "rotation":
+        return <RotationGame onFinish={handleGameEnd} />;
       default:
         return <div>Game component not available</div>;
     }

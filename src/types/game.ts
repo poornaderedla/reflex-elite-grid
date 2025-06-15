@@ -25,7 +25,13 @@ export type GameType =
   | "sameShapes"
   | "colorFramesCount"
   | "fastClick" 
-  | "more100";
+  | "more100"
+  | "shake"
+  | "numbersOrder"
+  | "selection"
+  | "swipe2"
+  | "colorChange2"
+  | "rotation";
 
 export interface Game {
   id: GameType;
