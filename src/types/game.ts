@@ -1,4 +1,3 @@
-
 export type GameType = 
   | "colorChange" 
   | "catchBall" 
@@ -7,7 +6,13 @@ export type GameType =
   | "colorText" 
   | "colorCatch" 
   | "reflexTap" 
-  | "patternMemory";
+  | "patternMemory"
+  | "math"
+  | "sound" 
+  | "sensation"
+  | "swipe"
+  | "excessCells"
+  | "aiming";
 
 export interface Game {
   id: GameType;

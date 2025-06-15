@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
@@ -13,6 +14,12 @@ import ColorTextGame from "@/games/ColorTextGame";
 import ColorCatchGame from "@/games/ColorCatchGame";
 import ReflexTapGame from "@/games/ReflexTapGame";
 import PatternMemoryGame from "@/games/PatternMemoryGame";
+import MathGame from "@/games/MathGame";
+import SoundGame from "@/games/SoundGame";
+import SensationGame from "@/games/SensationGame";
+import SwipeGame from "@/games/SwipeGame";
+import ExcessCellsGame from "@/games/ExcessCellsGame";
+import AimingGame from "@/games/AimingGame";
 
 const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorChange: 0.20,      // 0.20s world average for "Color Change"
@@ -23,6 +30,12 @@ const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorCatch: 27.00,      // 27s for color catch
   reflexTap: 5.00,        // 5s (total for whole game or for all taps)
   patternMemory: 2.50,    // 2.5s per pattern
+  math: 35.00,            // 35s for math equations
+  sound: 0.25,            // 0.25s for sound reaction
+  sensation: 0.30,        // 0.30s for tactile sensation
+  swipe: 0.40,            // 0.40s for swipe reaction
+  excessCells: 25.00,     // 25s for excess cells
+  aiming: 0.50,           // 0.50s for aiming targets
 };
 
 const GamePage: React.FC = () => {
@@ -87,6 +100,18 @@ const GamePage: React.FC = () => {
         return <ReflexTapGame onFinish={handleGameEnd} />;
       case "patternMemory":
         return <PatternMemoryGame onFinish={handleGameEnd} />;
+      case "math":
+        return <MathGame onFinish={handleGameEnd} />;
+      case "sound":
+        return <SoundGame onFinish={handleGameEnd} />;
+      case "sensation":
+        return <SensationGame onFinish={handleGameEnd} />;
+      case "swipe":
+        return <SwipeGame onFinish={handleGameEnd} />;
+      case "excessCells":
+        return <ExcessCellsGame onFinish={handleGameEnd} />;
+      case "aiming":
+        return <AimingGame onFinish={handleGameEnd} />;
       default:
         return <div>Game component not available</div>;
     }
