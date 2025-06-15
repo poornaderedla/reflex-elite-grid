@@ -15,7 +15,11 @@ export type GameType =
   | "aiming"
   | "longestLine"
   | "memory"
-  | "peripheralVision";
+  | "peripheralVision"
+  | "f1StartLights"
+  | "spatialImagination"
+  | "sixDots"
+  | "clickLimit";
 
 export interface Game {
   id: GameType;

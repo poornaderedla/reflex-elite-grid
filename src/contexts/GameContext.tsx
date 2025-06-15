@@ -135,6 +135,34 @@ const GAMES: Game[] = [
     instructions: "Focus on the center while remembering the largest number shown at the screen edges.",
     icon: "👁️",
   },
+  {
+    id: "f1StartLights",
+    name: "F1 Start Lights",
+    description: "React to Formula 1 start lights sequence",
+    instructions: "Wait for all 5 red lights to come on, then react as fast as possible when they go out.",
+    icon: "🏎️",
+  },
+  {
+    id: "spatialImagination",
+    name: "Spatial Imagination",
+    description: "Compare and identify rotated table patterns",
+    instructions: "Look at the original pattern and find which option shows the same pattern rotated 90° clockwise.",
+    icon: "🔄",
+  },
+  {
+    id: "sixDots",
+    name: "Six Dots",
+    description: "Remember and repeat color sequence",
+    instructions: "Watch the sequence of colored dots lighting up, then repeat the exact same sequence.",
+    icon: "🎯",
+  },
+  {
+    id: "clickLimit",
+    name: "Click Limit",
+    description: "Reach the maximum number of clicks in time",
+    instructions: "Click as fast as possible to reach the target number of clicks before time runs out.",
+    icon: "⚡",
+  },
 ];
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ 

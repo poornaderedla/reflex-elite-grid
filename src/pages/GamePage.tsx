@@ -22,6 +22,10 @@ import AimingGame from "@/games/AimingGame";
 import LongestLineGame from "@/games/LongestLineGame";
 import MemoryGame from "@/games/MemoryGame";
 import PeripheralVisionGame from "@/games/PeripheralVisionGame";
+import F1StartLightsGame from "@/games/F1StartLightsGame";
+import SpatialImaginationGame from "@/games/SpatialImaginationGame";
+import SixDotsGame from "@/games/SixDotsGame";
+import ClickLimitGame from "@/games/ClickLimitGame";
 
 const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorChange: 0.20,      // 0.20s world average for "Color Change"
@@ -41,6 +45,10 @@ const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   longestLine: 2.00,        // 2s average for line identification
   memory: 45.00,           // 45s average for memory matching
   peripheralVision: 3.00,   // 3s average for peripheral number identification
+  f1StartLights: 0.25,        // 0.25s average F1 driver reaction time
+  spatialImagination: 3.00,   // 3s average for spatial pattern recognition
+  sixDots: 2.00,             // 2s average per sequence item
+  clickLimit: 8.00,          // 8s average to complete click challenges
 };
 
 const GamePage: React.FC = () => {
@@ -123,6 +131,14 @@ const GamePage: React.FC = () => {
         return <MemoryGame onFinish={handleGameEnd} />;
       case "peripheralVision":
         return <PeripheralVisionGame onFinish={handleGameEnd} />;
+      case "f1StartLights":
+        return <F1StartLightsGame onFinish={handleGameEnd} />;
+      case "spatialImagination":
+        return <SpatialImaginationGame onFinish={handleGameEnd} />;
+      case "sixDots":
+        return <SixDotsGame onFinish={handleGameEnd} />;
+      case "clickLimit":
+        return <ClickLimitGame onFinish={handleGameEnd} />;
       default:
         return <div>Game component not available</div>;
     }
