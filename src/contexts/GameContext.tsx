@@ -73,6 +73,48 @@ const GAMES: Game[] = [
     instructions: "Watch the sequence of colors or numbers, then repeat it in the same order.",
     icon: "📋",
   },
+  {
+    id: "math",
+    name: "Math Challenge",
+    description: "Solve equations quickly",
+    instructions: "Solve mathematical equations as fast as possible to score points.",
+    icon: "🧮",
+  },
+  {
+    id: "sound",
+    name: "Sound Reaction",
+    description: "React to audio cues",
+    instructions: "Listen carefully and tap when you hear the target sound.",
+    icon: "🔊",
+  },
+  {
+    id: "sensation",
+    name: "Tactile Response",
+    description: "React to visual triggers",
+    instructions: "Touch the highlighted area as quickly as possible when it appears.",
+    icon: "👆",
+  },
+  {
+    id: "swipe",
+    name: "Swipe Direction",
+    description: "Swipe in the correct direction",
+    instructions: "Quickly swipe in the direction shown by the arrow.",
+    icon: "👆",
+  },
+  {
+    id: "excessCells",
+    name: "Excess Cells",
+    description: "Remove the extra cells",
+    instructions: "Identify and remove the cells that don't belong in the pattern.",
+    icon: "🔲",
+  },
+  {
+    id: "aiming",
+    name: "Target Practice",
+    description: "Hit targets quickly",
+    instructions: "Tap on the targets as they appear. Smaller targets give more points.",
+    icon: "🎯",
+  },
 ];
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ 
