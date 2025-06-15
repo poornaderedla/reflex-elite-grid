@@ -19,7 +19,13 @@ export type GameType =
   | "f1StartLights"
   | "spatialImagination"
   | "sixDots"
-  | "clickLimit";
+  | "clickLimit"
+  | "equalNumbers"
+  | "dotsCount"
+  | "sameShapes"
+  | "colorFramesCount"
+  | "fastClick" 
+  | "more100";
 
 export interface Game {
   id: GameType;

@@ -26,6 +26,12 @@ import F1StartLightsGame from "@/games/F1StartLightsGame";
 import SpatialImaginationGame from "@/games/SpatialImaginationGame";
 import SixDotsGame from "@/games/SixDotsGame";
 import ClickLimitGame from "@/games/ClickLimitGame";
+import EqualNumbersGame from "@/games/EqualNumbersGame";
+import DotsCountGame from "@/games/DotsCountGame";
+import SameShapesGame from "@/games/SameShapesGame";
+import ColorFramesCountGame from "@/games/ColorFramesCountGame";
+import FastClickGame from "@/games/FastClickGame";
+import More100Game from "@/games/More100Game";
 
 const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   colorChange: 0.20,      // 0.20s world average for "Color Change"
@@ -49,6 +55,12 @@ const STANDARD_BEST_AVERAGE_TIMINGS: Record<string, number> = {
   spatialImagination: 3.00,   // 3s average for spatial pattern recognition
   sixDots: 2.00,             // 2s average per sequence item
   clickLimit: 8.00,          // 8s average to complete click challenges
+  equalNumbers: 2.50,        // 2.5s average to find matching numbers
+  dotsCount: 4.00,           // 4s average including counting time
+  sameShapes: 3.00,          // 3s average to identify matching shapes
+  colorFramesCount: 5.00,    // 5s average including observation time
+  fastClick: 0.60,           // 0.6s average for color button reaction
+  more100: 6.00,             // 6s average for mental math calculation
 };
 
 const GamePage: React.FC = () => {
@@ -139,6 +151,18 @@ const GamePage: React.FC = () => {
         return <SixDotsGame onFinish={handleGameEnd} />;
       case "clickLimit":
         return <ClickLimitGame onFinish={handleGameEnd} />;
+      case "equalNumbers":
+        return <EqualNumbersGame onFinish={handleGameEnd} />;
+      case "dotsCount":
+        return <DotsCountGame onFinish={handleGameEnd} />;
+      case "sameShapes":
+        return <SameShapesGame onFinish={handleGameEnd} />;
+      case "colorFramesCount":
+        return <ColorFramesCountGame onFinish={handleGameEnd} />;
+      case "fastClick":
+        return <FastClickGame onFinish={handleGameEnd} />;
+      case "more100":
+        return <More100Game onFinish={handleGameEnd} />;
       default:
         return <div>Game component not available</div>;
     }

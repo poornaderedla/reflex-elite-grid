@@ -163,6 +163,48 @@ const GAMES: Game[] = [
     instructions: "Click as fast as possible to reach the target number of clicks before time runs out.",
     icon: "⚡",
   },
+  {
+    id: "equalNumbers",
+    name: "Equal Numbers",
+    description: "Find all numbers equal to the target",
+    instructions: "Quickly find and tap all numbers that match the target number shown.",
+    icon: "🔢",
+  },
+  {
+    id: "dotsCount",
+    name: "Dots Count",
+    description: "Count all dots in the frame",
+    instructions: "Count the dots that appear briefly, then enter how many you saw.",
+    icon: "⚫",
+  },
+  {
+    id: "sameShapes",
+    name: "Same Shapes",
+    description: "Find all matching shapes",
+    instructions: "Find and tap all shapes that match the target shape shown.",
+    icon: "🔶",
+  },
+  {
+    id: "colorFramesCount",
+    name: "Color Frames Count",
+    description: "Count frames of a specific color",
+    instructions: "Count how many frames of the target color appear in the grid.",
+    icon: "🟩",
+  },
+  {
+    id: "fastClick",
+    name: "Fast Click",
+    description: "Press the correct button quickly",
+    instructions: "Click the button with the color that matches the instruction as fast as possible.",
+    icon: "⚡",
+  },
+  {
+    id: "more100",
+    name: "More 100",
+    description: "Add numbers to reach over 100",
+    instructions: "Memorize the numbers shown and calculate their sum as quickly as possible.",
+    icon: "➕",
+  },
 ];
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ 
