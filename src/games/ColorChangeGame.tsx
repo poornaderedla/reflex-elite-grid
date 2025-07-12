@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 
 interface ColorChangeGameProps {
-  onFinish: (score: number, time: number) => void;
+  onFinish: (score: number, time: number, penaltyScore: number, penaltyClicks: number, reactionTimes: number[]) => void;
 }
 
 const ColorChangeGame: React.FC<ColorChangeGameProps> = ({ onFinish }) => {
@@ -13,10 +13,19 @@ const ColorChangeGame: React.FC<ColorChangeGameProps> = ({ onFinish }) => {
   const [rounds, setRounds] = useState<number>(0);
   const [lastChangeTime, setLastChangeTime] = useState<number>(0);
   const [countdownActive, setCountdownActive] = useState<boolean>(false);
+  const [gameState, setGameState] = useState<"start" | "countdown" | "playing" | "betweenRounds" | "finished">("countdown");
+  const [countdownNumber, setCountdownNumber] = useState<number>(3);
+  const [penaltyScore, setPenaltyScore] = useState<number>(0);
+  const [penaltyClicks, setPenaltyClicks] = useState<number>(0);
+  const [reactionTimes, setReactionTimes] = useState<number[]>([]);
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [resultsData, setResultsData] = useState<any>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const totalRounds = 10;
-  const minDelay = 1000; // Min delay before color change in ms
-  const maxDelay = 4000; // Max delay before color change in ms
+  const minDelay = 1000;
+  const maxDelay = 4000;
+  const whiteScreenDuration = 1000;
   
   const colors = [
     "bg-red-500",
@@ -28,67 +37,296 @@ const ColorChangeGame: React.FC<ColorChangeGameProps> = ({ onFinish }) => {
     "bg-indigo-500",
   ];
 
-  const handleTap = useCallback(() => {
-    if (!isChanging || !lastChangeTime) {
-      // Early tap or no change yet - penalty
-      setScore(Math.max(0, score - 10));
-      return;
-    }
-    
-    const reactionTime = Date.now() - lastChangeTime;
-    
-    // Calculate score based on reaction time
-    // Faster reactions = higher score
-    const newPoints = Math.max(0, Math.floor(1000 - reactionTime / 2));
-    setScore(prevScore => prevScore + newPoints);
-    
-    // Reset for next round
-    setIsChanging(false);
-    setRounds(prevRounds => prevRounds + 1);
-    
-    if (rounds + 1 >= totalRounds) {
-      // Game completed
-      const totalTime = Date.now() - gameStartTime;
-      onFinish(score + newPoints, totalTime);
-    } else {
-      // Schedule next color change
-      setCountdownActive(true);
-    }
-  }, [isChanging, lastChangeTime, score, rounds, gameStartTime, onFinish]);
+  const reactionTimeBenchmarks = {
+    worldClass: 230,
+    excellent: 260,
+    good: 300,
+    average: 350,
+    slow: 400,
+    verySlow: 500
+  };
 
-  // Initialize game
-  useEffect(() => {
-    setGameStartTime(Date.now());
-    setCountdownActive(true);
+  const calculateStats = useCallback(() => {
+    if (reactionTimes.length === 0) return null;
+    let times = [...reactionTimes];
+    let median = 0;
+    let average = 0;
+    if (times.length > 5) {
+      // Drop the slowest round
+      times = times.filter(t => t !== Math.max(...times));
+      average = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
+    } else {
+      // Use median
+      times.sort((a, b) => a - b);
+      const mid = Math.floor(times.length / 2);
+      median = times.length % 2 !== 0 ? times[mid] : Math.round((times[mid - 1] + times[mid]) / 2);
+      average = median;
+    }
+    const best = Math.min(...reactionTimes);
+    const worst = Math.max(...reactionTimes);
+    const vsWorldClass = average - reactionTimeBenchmarks.worldClass;
+    const percentageSlower = Math.round((vsWorldClass / reactionTimeBenchmarks.worldClass) * 100);
+    let performanceRating = "";
+    if (average <= reactionTimeBenchmarks.worldClass) {
+      performanceRating = "World Class";
+    } else if (average <= reactionTimeBenchmarks.excellent) {
+      performanceRating = "Excellent";
+    } else if (average <= reactionTimeBenchmarks.good) {
+      performanceRating = "Good";
+    } else if (average <= reactionTimeBenchmarks.average) {
+      performanceRating = "Average";
+    } else if (average <= reactionTimeBenchmarks.slow) {
+      performanceRating = "Slow";
+    } else {
+      performanceRating = "Very Slow";
+    }
+    return {
+      average,
+      best,
+      worst,
+      vsWorldClass,
+      percentageSlower,
+      performanceRating,
+      benchmarks: reactionTimeBenchmarks
+    };
+  }, [reactionTimes]);
+
+  const calculateWorldStandardScore = useCallback((reactionTime: number) => {
+    const worldClass = reactionTimeBenchmarks.worldClass;
+    const maxPossible = 1000;
+    let normalized = Math.max(0, maxPossible - reactionTime);
+    
+    if (reactionTime <= worldClass) {
+      normalized += (worldClass - reactionTime) * 2;
+    }
+    
+    return Math.max(0, Math.min(1000, normalized));
   }, []);
 
-  // Handle color change scheduling
+  const handleStart = () => {
+    setGameState("countdown");
+    setCountdownNumber(3);
+  };
+
   useEffect(() => {
-    if (!countdownActive) return;
-    
+    if (gameState !== "countdown") return;
+    setGameState("playing");
+    setCountdownActive(true);
+  }, [gameState, countdownNumber]);
+
+  useEffect(() => {
+    if (gameState === "playing" && rounds === 0) {
+      setGameStartTime(Date.now());
+      setScore(0);
+      setRounds(0);
+      setPenaltyScore(0);
+      setPenaltyClicks(0);
+      setReactionTimes([]);
+      setCountdownActive(true);
+      setShowResults(false);
+    }
+  }, [gameState]);
+
+  useEffect(() => {
+    if (!countdownActive || gameState !== "playing") return;
     const delay = Math.floor(Math.random() * (maxDelay - minDelay)) + minDelay;
     const timer = setTimeout(() => {
-      // Change the background color
       const newColor = colors[Math.floor(Math.random() * colors.length)];
       setBackgroundColor(newColor);
       setIsChanging(true);
       setLastChangeTime(Date.now());
       setCountdownActive(false);
     }, delay);
-    
     return () => clearTimeout(timer);
-  }, [countdownActive, colors]);
-  
+  }, [countdownActive, colors, gameState]);
+
+  const handleTap = useCallback(() => {
+    if (gameState === "betweenRounds") {
+      const penalty = 20;
+      setScore((prevScore) => Math.max(0, prevScore - penalty));
+      setPenaltyScore((prev) => prev + penalty);
+      setPenaltyClicks((prev) => prev + 1);
+      return;
+    }
+    
+    if (gameState !== "playing") return;
+    
+    if (!isChanging || !lastChangeTime) {
+      const penalty = 10;
+      setScore((prevScore) => Math.max(0, prevScore - penalty));
+      setPenaltyScore((prev) => prev + penalty);
+      setPenaltyClicks((prev) => prev + 1);
+      return;
+    }
+    
+    const reactionTime = Date.now() - lastChangeTime;
+    setReactionTimes(prev => [...prev, reactionTime]);
+    
+    const newPoints = calculateWorldStandardScore(reactionTime);
+    setScore((prevScore) => prevScore + newPoints);
+    setIsChanging(false);
+    setRounds((prevRounds) => prevRounds + 1);
+    
+    if (rounds + 1 >= totalRounds) {
+      const totalTime = Date.now() - gameStartTime;
+      setGameState("finished");
+      const stats = calculateStats();
+      setResultsData({
+        score: score + newPoints,
+        totalTime,
+        penaltyScore,
+        penaltyClicks,
+        reactionTimes,
+        stats
+      });
+      setShowResults(true);
+    } else {
+      setBackgroundColor("bg-white");
+      setGameState("betweenRounds");
+      
+      setTimeout(() => {
+        const newColor = colors[Math.floor(Math.random() * colors.length)];
+        setBackgroundColor(newColor);
+        setIsChanging(true);
+        setLastChangeTime(Date.now());
+        setGameState("playing");
+        setCountdownActive(false);
+      }, whiteScreenDuration);
+    }
+  }, [isChanging, lastChangeTime, score, rounds, gameStartTime, gameState, penaltyScore, penaltyClicks, calculateWorldStandardScore, calculateStats]);
+
+  if (gameState === "betweenRounds") {
+    return (
+      <div 
+        className="flex h-[calc(100vh-10rem)] w-full flex-col items-center justify-center bg-white transition-colors duration-200"
+        onClick={handleTap}
+      >
+        <div className="mt-8 text-center text-black text-lg">
+          Wait for the color change...
+          {penaltyClicks > 0 && (
+            <div className="text-red-500 mt-2">
+              Penalty: -{penaltyScore} points ({penaltyClicks} early clicks)
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (showResults && resultsData) {
+    const { score, penaltyScore, penaltyClicks, totalTime, reactionTimes, stats } = resultsData;
+    const netScore = score - penaltyScore;
+    return (
+      <div className="w-full min-h-[calc(100vh-10rem)] flex items-center justify-center bg-luxury-black p-6">
+        <div className="w-full max-w-md bg-luxury-black rounded-2xl shadow-2xl border-2 border-luxury-gold p-6 flex flex-col items-center animate-fade-in max-h-[120vh] overflow-y-auto">
+          {/* Best Results & Tips Section */}
+          <div className="w-full mb-4 p-3 rounded-lg bg-luxury-gold/10 border border-luxury-gold/40 text-center">
+            <div className="text-base font-semibold text-luxury-gold mb-1">How to Get the Best Results</div>
+            <div className="text-sm text-luxury-white/80 mb-1">
+              Tap as soon as the color changes. The faster you react, the higher your score! Early taps will reduce your score.
+            </div>
+            <div className="text-sm text-luxury-gold">
+              <span className="font-bold">World Class:</span> {stats?.benchmarks.worldClass ?? 230}ms average reaction
+            </div>
+          </div>
+          {/* End Best Results & Tips Section */}
+          <div className="text-center mb-4">
+            <div className="text-3xl font-bold text-luxury-gold mb-2">Game Over!</div>
+            <div className="text-lg text-white mb-1">Color Change Results</div>
+          </div>
+          <div className="w-full flex flex-col gap-2 mb-4">
+            <div className="flex justify-between text-lg">
+              <span className="text-luxury-white/80">Net Score:</span>
+              <span className="font-bold text-luxury-gold">{netScore}</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Total Score:</span>
+              <span>{score}</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Penalty Deductions:</span>
+              <span className="text-red-400">-{penaltyScore} ({penaltyClicks} early clicks)</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Avg. Reaction:</span>
+              <span>{stats?.average ?? 0}ms</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Best:</span>
+              <span>{stats?.best ?? 0}ms</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Worst:</span>
+              <span>{stats?.worst ?? 0}ms</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Total Time:</span>
+              <span>{(totalTime / 1000).toFixed(2)}s</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Performance:</span>
+              <span className="font-semibold text-luxury-gold">{stats?.performanceRating}</span>
+            </div>
+          </div>
+          <button
+            className="text-xs text-luxury-gold underline mb-2 focus:outline-none"
+            onClick={() => setShowDetails((v) => !v)}
+          >
+            {showDetails ? "Hide Details" : "Show Detailed Stats"}
+          </button>
+          {showDetails && (
+            <div className="w-full bg-luxury-black/80 rounded-lg border border-luxury-gold/30 p-3 mb-2">
+              <div className="text-sm text-luxury-gold mb-1 font-semibold">Reaction Times (ms):</div>
+              <div className="flex flex-wrap gap-2 text-xs text-luxury-white/80">
+                {reactionTimes.map((t, i) => (
+                  <span key={i} className="px-2 py-1 bg-luxury-gold/10 rounded">{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-4 mt-4 w-full">
+            <button
+              className="flex-1 px-4 py-2 bg-luxury-gold text-luxury-black font-semibold rounded hover:bg-yellow-400 transition"
+              onClick={() => window.location.reload()}
+            >
+              Play Again
+            </button>
+            <button
+              className="flex-1 px-4 py-2 bg-luxury-white text-luxury-black font-semibold rounded hover:bg-luxury-gold transition"
+              onClick={() => navigator.share && navigator.share({ title: 'Reaction Time Results', text: `Score: ${score}, Net: ${netScore}, Avg: ${stats?.average ?? 0}ms`, url: window.location.href })}
+            >
+              Share
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isWhiteBg = backgroundColor === "bg-white";
+  const borderColor = isWhiteBg ? "border-black" : "border-white";
+  const borderWidth = isWhiteBg ? "border-4" : "border-8";
+
   return (
-    <div 
-      className={`flex h-[calc(100vh-10rem)] w-full flex-col items-center justify-center transition-colors duration-200 ${backgroundColor}`}
+    <div
+      className={`flex h-[calc(100vh-10rem)] w-full flex-col items-center justify-center transition-colors duration-200 ${borderWidth} ${borderColor} ${backgroundColor}`}
       onClick={handleTap}
+      style={{ boxSizing: "border-box" }}
     >
       <div className="pointer-events-none select-none">
-        <div className="text-4xl font-bold text-white">{score}</div>
         <div className="mt-2 text-sm font-medium text-white/70">
-          {rounds}/{totalRounds}
+          Round: {rounds}/{totalRounds} | Score: {score}
         </div>
+        {reactionTimes.length > 0 && (
+          <div className="text-sm font-medium text-white/70">
+            Avg. Reaction: {calculateStats()?.average || 0}ms
+          </div>
+        )}
+        {penaltyClicks > 0 && (
+          <div className="text-sm font-medium text-white/70">
+            Penalties: -{penaltyScore} ({penaltyClicks} clicks)
+          </div>
+        )}
         
         <div className="mt-8 text-center text-white">
           {!isChanging ? (

@@ -15,9 +15,9 @@ const Index: React.FC = () => {
     <Layout>
       <div className="space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">REFLEX ROYALE</h1>
+          <h1 className="text-4xl font-bold tracking-tight">REFLEX SIGN</h1>
           <p className="mt-2 text-sm text-luxury-white/70">
-            Train your cognitive reflexes and visual focus
+            Train your cognitive reflexes
           </p>
         </div>
 
