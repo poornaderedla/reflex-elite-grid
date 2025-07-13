@@ -219,7 +219,7 @@ const MathGame: React.FC<MathGameProps> = ({ onFinish }) => {
               </div>
             </div>
           )}
-          <div className="flex gap-4 mt-4 w-full">
+          <div className="flex gap-4 mt-8 w-full">
             <button
               className="flex-1 px-4 py-2 bg-luxury-gold text-luxury-black font-semibold rounded hover:bg-yellow-400 transition"
               onClick={() => window.location.reload()}
@@ -250,7 +250,7 @@ const MathGame: React.FC<MathGameProps> = ({ onFinish }) => {
           {currentEquation} = ?
         </div>
         
-        <div className="space-y-4">
+        <div className="flex flex-col items-center space-y-8">
           <input
             type="number"
             value={userAnswer}

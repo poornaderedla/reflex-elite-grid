@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Target, Crosshair } from "lucide-react";
 
 interface AimingGameProps {
@@ -27,6 +27,10 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [missedTargets, setMissedTargets] = useState<number>(0);
 
+  // Add a ref to track gameOver for use in setTimeout
+  const gameOverRef = useRef(false);
+  useEffect(() => { gameOverRef.current = gameOver; }, [gameOver]);
+
   const generateTarget = useCallback(() => {
     const id = Date.now();
     const size = 40 + Math.random() * 40; // 40-80px
@@ -41,7 +45,10 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
     setTimeout(() => {
       setTargets(prev => {
         if (prev.some(t => t.id === id)) {
-          setMissedTargets(prev => prev + 1);
+          // Only increment missedTargets if game is not over
+          if (!gameOverRef.current) {
+            setMissedTargets(prev => prev + 1);
+          }
         }
         return prev.filter(t => t.id !== id);
       });

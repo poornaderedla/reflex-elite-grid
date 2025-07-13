@@ -1,140 +1,177 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Zap, Circle } from "lucide-react";
 
 interface SensationGameProps {
   onFinish: (score: number, time: number) => void;
 }
 
+const TOTAL_ROUNDS = 10;
+const ZONES = Array.from({ length: 9 }, (_, i) => i); // 3x3 grid
+const REACTION_BENCHMARKS = {
+  worldClass: 300,
+  excellent: 400,
+  good: 500,
+  average: 600,
+  slow: 700,
+  verySlow: 800,
+};
+
+const getResponseTime = (round: number) => {
+  const min = 2000, max = 6000;
+  return Math.max(min, max - ((max - min) * (round / (TOTAL_ROUNDS - 1))));
+};
+
 const SensationGame: React.FC<SensationGameProps> = ({ onFinish }) => {
-  const [score, setScore] = useState<number>(0);
-  const [gameStartTime, setGameStartTime] = useState<number>(0);
+  // State
+  const [score, setScore] = useState(0);
+  const [round, setRound] = useState(0);
   const [activeZone, setActiveZone] = useState<number | null>(null);
-  const [rounds, setRounds] = useState<number>(0);
-  const [isWaiting, setIsWaiting] = useState<boolean>(true);
-  const [triggerTime, setTriggerTime] = useState<number>(0);
-  const [gameOver, setGameOver] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(true);
+  const [isTransition, setIsTransition] = useState(true);
+  const [countdown, setCountdown] = useState<number | null>(3);
+  const [triggerTime, setTriggerTime] = useState(0);
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
+  const [lastReaction, setLastReaction] = useState<number | null>(null);
+  const [correct, setCorrect] = useState(0);
+  const [wrong, setWrong] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameStart, setGameStart] = useState<number>(0);
+  const [gameEnd, setGameEnd] = useState<number>(0);
   const [showDetails, setShowDetails] = useState(false);
-  const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [wrongAnswers, setWrongAnswers] = useState(0);
-  const [gameEndTime, setGameEndTime] = useState<number | null>(null);
 
-  const totalRounds = 10;
-  const zones = Array.from({ length: 9 }, (_, i) => i); // 3x3 grid
+  // Refs for timeouts/intervals
+  const timeouts = useRef<NodeJS.Timeout[]>([]);
+  const interval = useRef<NodeJS.Timeout | null>(null);
+  const gameOverRef = useRef(false);
 
-  const reactionTimeBenchmarks = {
-    worldClass: 400,
-    excellent: 500,
-    good: 600,
-    average: 700,
-    slow: 800,
-    verySlow: 1000
+  // Cleanup
+  const clearAll = () => {
+    timeouts.current.forEach(clearTimeout);
+    timeouts.current = [];
+    if (interval.current) clearInterval(interval.current);
+    interval.current = null;
   };
 
-  const calculateStats = () => {
-    if (reactionTimes.length === 0) return null;
-    
-    const average = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
-    const best = Math.min(...reactionTimes);
-    const worst = Math.max(...reactionTimes);
-    const accuracy = correctAnswers > 0 ? Math.round((correctAnswers / (correctAnswers + wrongAnswers)) * 100) : 0;
-    
-    let performanceRating = 'Very Slow';
-    let ratingColor = 'text-red-400';
-    
-    if (average <= reactionTimeBenchmarks.worldClass) {
-      performanceRating = 'World Class';
-      ratingColor = 'text-purple-400';
-    } else if (average <= reactionTimeBenchmarks.excellent) {
-      performanceRating = 'Excellent';
-      ratingColor = 'text-blue-400';
-    } else if (average <= reactionTimeBenchmarks.good) {
-      performanceRating = 'Good';
-      ratingColor = 'text-green-400';
-    } else if (average <= reactionTimeBenchmarks.average) {
-      performanceRating = 'Average';
-      ratingColor = 'text-yellow-400';
-    } else if (average <= reactionTimeBenchmarks.slow) {
-      performanceRating = 'Slow';
-      ratingColor = 'text-orange-400';
-    }
-    
-    return {
-      average,
-      best,
-      worst,
-      accuracy,
-      performanceRating,
-      ratingColor,
-      benchmarks: reactionTimeBenchmarks
-    };
-  };
-
-  const triggerSensation = useCallback(() => {
-    const randomZone = Math.floor(Math.random() * zones.length);
-    setActiveZone(randomZone);
-    setTriggerTime(Date.now());
-    setIsWaiting(false);
-    
-    // Auto-advance if no response within 2 seconds
-    setTimeout(() => {
-      if (activeZone !== null) {
-        nextRound();
+  // Start 3-2-1 countdown
+  const startCountdown = useCallback((onDone: () => void) => {
+    setIsTransition(true);
+    setCountdown(3);
+    let count = 3;
+    interval.current = setInterval(() => {
+      count -= 1;
+      setCountdown(count);
+      if (count === 0) {
+        clearInterval(interval.current!);
+        interval.current = null;
+        setIsTransition(false);
+        setCountdown(null);
+        onDone();
       }
-    }, 2000);
+    }, 800); // 2.4s total
+  }, []);
+
+  // Start a round
+  const startRound = useCallback(() => {
+    if (gameOverRef.current) return;
+    setRound(prev => prev + 1);
+    setIsWaiting(false);
+    const zone = Math.floor(Math.random() * ZONES.length);
+    setActiveZone(zone);
+    setTriggerTime(Date.now());
+    // Auto-advance if no response
+    const responseTime = getResponseTime(round + 1); // round+1 because round is incremented now
+    const auto = setTimeout(() => {
+      if (!gameOverRef.current && activeZone !== null) {
+        handleAdvance(false);
+      }
+    }, responseTime);
+    timeouts.current.push(auto);
   }, [activeZone]);
 
-  const nextRound = useCallback(() => {
+  // Advance to next round
+  const handleAdvance = useCallback((wasCorrect: boolean) => {
+    clearAll();
     setActiveZone(null);
     setIsWaiting(true);
-    setRounds(prevRounds => {
-      const newRounds = prevRounds + 1;
-      if (newRounds >= totalRounds) {
+    setTriggerTime(0);
+    setTimeout(() => {
+      if (round >= TOTAL_ROUNDS) {
         setGameOver(true);
-        setGameEndTime(Date.now());
-        return prevRounds;
+        setGameEnd(Date.now());
+        gameOverRef.current = true;
       } else {
-        // Start next sensation after delay
-        setTimeout(() => {
-          const delay = Math.random() * 2000 + 1000; // 1-3 seconds
-          setTimeout(triggerSensation, delay);
-        }, 500);
-        return newRounds;
+        startCountdown(() => startRound());
       }
-    });
-  }, [triggerSensation]);
+    }, 0);
+  }, [startCountdown, startRound]);
 
-  useEffect(() => {
-    setGameStartTime(Date.now());
-    // Start first sensation
-    const delay = Math.random() * 2000 + 1000;
-    setTimeout(triggerSensation, delay);
-  }, [triggerSensation]);
-
-  const handleZoneTouch = (zoneIndex: number) => {
-    if (isWaiting || activeZone === null) return;
-    
-    if (zoneIndex === activeZone) {
-      // Correct zone
-      const reactionTime = Date.now() - triggerTime;
-      const points = Math.max(0, Math.floor(1000 - reactionTime / 2));
-      setScore(prevScore => prevScore + points);
-      setReactionTimes(prev => [...prev, reactionTime]);
-      setCorrectAnswers(c => c + 1);
-      nextRound();
+  // Handle user click
+  const handleZoneTouch = (zone: number) => {
+    if (isTransition || isWaiting || activeZone === null || gameOverRef.current) return;
+    if (zone === activeZone) {
+      // Correct
+      const reaction = Date.now() - triggerTime;
+      setLastReaction(reaction);
+      setReactionTimes(r => [...r, reaction]);
+      setScore(s => s + Math.max(100, Math.floor(1000 - reaction / 2)));
+      setCorrect(c => c + 1);
+      handleAdvance(true);
     } else {
-      // Wrong zone - penalty
-      setWrongAnswers(w => w + 1);
-      setScore(prevScore => Math.max(0, prevScore - 50));
+      // Wrong
+      setWrong(w => w + 1);
+      setScore(s => Math.max(0, s - 25));
+      // Tactile feedback
+      const el = document.querySelector(`[data-zone="${zone}"]`) as HTMLElement;
+      if (el) {
+        el.style.transform = 'scale(0.9)';
+        el.style.borderColor = '#ef4444';
+        setTimeout(() => {
+          el.style.transform = 'scale(1)';
+          el.style.borderColor = '';
+        }, 200);
+      }
     }
   };
 
-  if (gameOver && gameEndTime) {
-    const stats = calculateStats();
-    const totalTime = gameEndTime - gameStartTime;
-    const accuracy = correctAnswers > 0 ? Math.round((correctAnswers / (correctAnswers + wrongAnswers)) * 100) : 0;
-    
+  // Game start
+  useEffect(() => {
+    setGameStart(Date.now());
+    setGameOver(false);
+    setScore(0);
+    setRound(0);
+    setCorrect(0);
+    setWrong(0);
+    setReactionTimes([]);
+    setLastReaction(null);
+    setActiveZone(null);
+    setIsWaiting(true);
+    setShowDetails(false);
+    gameOverRef.current = false;
+    clearAll();
+    startCountdown(() => startRound());
+    return clearAll;
+  }, [startCountdown, startRound]);
+
+  // Stats
+  const stats = (() => {
+    if (reactionTimes.length === 0) return null;
+    const avg = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+    const best = Math.min(...reactionTimes);
+    const worst = Math.max(...reactionTimes);
+    const accuracy = correct > 0 ? Math.round((correct / (correct + wrong)) * 100) : 0;
+    let rating = 'Very Slow', color = 'text-red-400';
+    if (avg <= REACTION_BENCHMARKS.worldClass) { rating = 'World Class'; color = 'text-purple-400'; }
+    else if (avg <= REACTION_BENCHMARKS.excellent) { rating = 'Excellent'; color = 'text-blue-400'; }
+    else if (avg <= REACTION_BENCHMARKS.good) { rating = 'Good'; color = 'text-green-400'; }
+    else if (avg <= REACTION_BENCHMARKS.average) { rating = 'Average'; color = 'text-yellow-400'; }
+    else if (avg <= REACTION_BENCHMARKS.slow) { rating = 'Slow'; color = 'text-orange-400'; }
+    return { avg, best, worst, accuracy, rating, color };
+  })();
+
+  // Game over screen
+  if (gameOver && gameEnd) {
+    const totalTime = Math.max(0, gameEnd - gameStart);
     return (
       <div className="w-full min-h-[calc(100vh-10rem)] flex items-center justify-center bg-luxury-black p-6">
         <div className="w-full max-w-md bg-luxury-black rounded-2xl shadow-2xl border-2 border-luxury-gold p-6 flex flex-col items-center animate-fade-in">
@@ -145,7 +182,7 @@ const SensationGame: React.FC<SensationGameProps> = ({ onFinish }) => {
               React quickly to visual tactile triggers. Touch the active zone as soon as you see the sensation!
             </div>
             <div className="text-sm text-luxury-gold">
-              <span className="font-bold">World Class:</span> {reactionTimeBenchmarks.worldClass}ms average reaction
+              <span className="font-bold">World Class:</span> {REACTION_BENCHMARKS.worldClass}ms average reaction
             </div>
           </div>
           {/* End Best Results & Tips Section */}
@@ -153,50 +190,48 @@ const SensationGame: React.FC<SensationGameProps> = ({ onFinish }) => {
             <div className="text-3xl font-bold text-luxury-gold mb-2">Game Over!</div>
             <div className="text-lg text-white mb-1">Sensation Results</div>
           </div>
-          
           <div className="w-full bg-luxury-black/50 rounded-lg border border-luxury-gold/30 p-4 mb-4">
             <div className="flex justify-between text-lg">
-              <span className="text-luxury-white/80">Score:</span>
-              <span className="font-bold text-luxury-gold">{score}</span>
+              <span className="text-luxury-white/80">Final Score:</span>
+              <span className="font-bold text-luxury-gold">{Math.max(0, score)}</span>
             </div>
             <div className="flex justify-between text-base">
               <span className="text-luxury-white/60">Accuracy:</span>
-              <span className="font-semibold text-luxury-gold">{accuracy}%</span>
+              <span className="font-semibold text-luxury-gold">{stats?.accuracy ?? 0}%</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Correct:</span>
-              <span className="text-green-400">{correctAnswers}</span>
+              <span className="text-luxury-white/60">Correct Answers:</span>
+              <span className="text-green-400">{correct}</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Wrong:</span>
-              <span className="text-red-400">{wrongAnswers}</span>
+              <span className="text-luxury-white/60">Wrong Answers:</span>
+              <span className="text-red-400">{wrong}</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Rounds:</span>
-              <span>{rounds}/{totalRounds}</span>
+              <span className="text-luxury-white/60">Rounds Completed:</span>
+              <span>{round}/{TOTAL_ROUNDS}</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Avg. Reaction:</span>
-              <span>{stats?.average ?? 0}ms</span>
+              <span className="text-luxury-white/60">Average Reaction:</span>
+              <span>{stats?.avg ?? 0}ms</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Best:</span>
-              <span>{stats?.best ?? 0}ms</span>
+              <span className="text-luxury-white/60">Best Reaction:</span>
+              <span className="text-green-400">{stats?.best ?? 0}ms</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Worst:</span>
-              <span>{stats?.worst ?? 0}ms</span>
+              <span className="text-luxury-white/60">Slowest Reaction:</span>
+              <span className="text-red-400">{stats?.worst ?? 0}ms</span>
             </div>
             <div className="flex justify-between text-base">
               <span className="text-luxury-white/60">Total Time:</span>
-              <span>{(totalTime / 1000).toFixed(2)}s</span>
+              <span>{(totalTime / 1000).toFixed(1)}s</span>
             </div>
             <div className="flex justify-between text-base">
-              <span className="text-luxury-white/60">Performance:</span>
-              <span className={`font-semibold ${stats?.ratingColor ?? 'text-luxury-gold'}`}>{stats?.performanceRating}</span>
+              <span className="text-luxury-white/60">Performance Level:</span>
+              <span className={`font-semibold ${stats?.color ?? 'text-luxury-gold'}`}>{stats?.rating}</span>
             </div>
           </div>
-          
           <button
             className="text-xs text-luxury-gold underline mb-2 focus:outline-none"
             onClick={() => setShowDetails((v) => !v)}
@@ -205,10 +240,17 @@ const SensationGame: React.FC<SensationGameProps> = ({ onFinish }) => {
           </button>
           {showDetails && (
             <div className="w-full bg-luxury-black/80 rounded-lg border border-luxury-gold/30 p-3 mb-2">
-              <div className="text-sm text-luxury-gold mb-1 font-semibold">Reaction Times (ms):</div>
+              <div className="text-sm text-luxury-gold mb-1 font-semibold">All Reaction Times (ms):</div>
               <div className="flex flex-wrap gap-2 text-xs text-luxury-white/80">
                 {reactionTimes.map((t, i) => (
-                  <span key={i} className="px-2 py-1 bg-luxury-gold/10 rounded">{t}</span>
+                  <span key={i} className={`px-2 py-1 rounded ${
+                    t <= REACTION_BENCHMARKS.worldClass ? 'bg-purple-500/20 text-purple-300' :
+                    t <= REACTION_BENCHMARKS.excellent ? 'bg-blue-500/20 text-blue-300' :
+                    t <= REACTION_BENCHMARKS.good ? 'bg-green-500/20 text-green-300' :
+                    t <= REACTION_BENCHMARKS.average ? 'bg-yellow-500/20 text-yellow-300' :
+                    t <= REACTION_BENCHMARKS.slow ? 'bg-orange-500/20 text-orange-300' :
+                    'bg-red-500/20 text-red-300'
+                  }`}>{t}</span>
                 ))}
               </div>
             </div>
@@ -222,7 +264,7 @@ const SensationGame: React.FC<SensationGameProps> = ({ onFinish }) => {
             </button>
             <button
               className="flex-1 px-4 py-2 bg-luxury-white text-luxury-black font-semibold rounded hover:bg-luxury-gold transition"
-              onClick={() => navigator.share && navigator.share({ title: 'Sensation Results', text: `Score: ${score}, Accuracy: ${accuracy}%, Avg: ${stats?.average ?? 0}ms`, url: window.location.href })}
+              onClick={() => navigator.share && navigator.share({ title: 'Sensation Results', text: `Score: ${score}, Accuracy: ${stats?.accuracy ?? 0}%, Avg: ${stats?.avg ?? 0}ms`, url: window.location.href })}
             >
               Share
             </button>
@@ -232,43 +274,63 @@ const SensationGame: React.FC<SensationGameProps> = ({ onFinish }) => {
     );
   }
 
+  // Main game UI
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-4 space-y-6">
-      <div className="text-center space-y-2">
-        <div className="text-lg">Score: {score}</div>
-        <div className="text-sm text-luxury-white/70">
-          Round {rounds + 1}/{totalRounds}
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-2 w-72 h-72">
-        {zones.map((zone) => (
-          <div
-            key={zone}
-            className={`relative border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-              activeZone === zone
-                ? 'border-luxury-gold bg-luxury-gold/30 animate-pulse'
-                : 'border-luxury-white/20 bg-luxury-white/5 hover:border-luxury-white/40'
-            }`}
-            onClick={() => handleZoneTouch(zone)}
-          >
-            <div className="absolute inset-0 flex items-center justify-center">
-              {activeZone === zone ? (
-                <Zap className="h-8 w-8 text-luxury-gold" />
-              ) : (
-                <Circle className="h-6 w-6 text-luxury-white/30" />
-              )}
-            </div>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-4 space-y-6 relative">
+      {/* Countdown overlay */}
+      {isTransition && countdown !== null && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-50">
+          <div className="text-4xl text-luxury-gold font-bold animate-pulse">
+            Next Round in {countdown}...
           </div>
-        ))}
+        </div>
+      )}
+      <div className="text-center space-y-2">
+        <div className="text-lg font-bold text-luxury-gold">Score: {score}</div>
+        <div className="text-sm text-luxury-white/70">
+          {isTransition
+            ? `Round ${Math.min(round + 1, TOTAL_ROUNDS)}/${TOTAL_ROUNDS}`
+            : `Round ${round}/${TOTAL_ROUNDS}`}
+        </div>
+        {lastReaction !== null && (
+          <div className="text-sm text-luxury-gold">Last Reaction: {lastReaction}ms</div>
+        )}
       </div>
-      
+      {/* Only show grid if not in transition */}
+      {!isTransition && (
+        <div className="grid grid-cols-3 gap-3 w-80 h-80">
+          {ZONES.map((zone) => (
+            <div
+              key={zone}
+              className={`relative border-2 rounded-lg cursor-pointer transition-all duration-300 ${
+                activeZone === zone
+                  ? 'border-luxury-gold bg-luxury-gold/30 animate-pulse shadow-lg shadow-luxury-gold/50 scale-105'
+                  : 'border-luxury-white/20 bg-luxury-white/5 hover:border-luxury-white/40 hover:bg-luxury-white/10 hover:scale-105'
+              }`}
+              data-zone={zone}
+              onClick={() => handleZoneTouch(zone)}
+              style={{
+                transform: activeZone === zone ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.3s ease-in-out'
+              }}
+            >
+              <div className="absolute inset-0 flex items-center justify-center">
+                {activeZone === zone ? (
+                  <Zap className="h-10 w-10 text-luxury-gold animate-bounce" />
+                ) : (
+                  <Circle className="h-8 w-8 text-luxury-white/30" />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="text-center space-y-2">
         <div className="text-sm text-luxury-white/70">
-          {isWaiting ? "Wait for the sensation..." : "Touch the active zone!"}
+          {isWaiting ? "Wait for the sensation..." : isTransition ? "" : `Touch the active zone! You have ${(getResponseTime(round)/1000).toFixed(1)}s!`}
         </div>
         <div className="text-xs text-luxury-white/50">
-          React to visual tactile triggers
+          React to visual tactile triggers - Take your time!
         </div>
       </div>
     </div>

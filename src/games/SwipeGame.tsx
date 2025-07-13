@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 
 interface SwipeGameProps {
@@ -25,6 +25,17 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
   const totalRounds = 12;
   const directions: Direction[] = ['up', 'down', 'left', 'right'];
 
+  // --- Timeout management ---
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clearTimeoutRef = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+  // --- Prevent double-advance ---
+  const roundActiveRef = useRef<boolean>(false);
+
   const reactionTimeBenchmarks = {
     worldClass: 400,
     excellent: 500,
@@ -36,15 +47,12 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
 
   const calculateStats = () => {
     if (reactionTimes.length === 0) return null;
-    
     const average = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
     const best = Math.min(...reactionTimes);
     const worst = Math.max(...reactionTimes);
     const accuracy = correctAnswers > 0 ? Math.round((correctAnswers / (correctAnswers + wrongAnswers)) * 100) : 0;
-    
     let performanceRating = 'Very Slow';
     let ratingColor = 'text-red-400';
-    
     if (average <= reactionTimeBenchmarks.worldClass) {
       performanceRating = 'World Class';
       ratingColor = 'text-purple-400';
@@ -61,7 +69,6 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
       performanceRating = 'Slow';
       ratingColor = 'text-orange-400';
     }
-    
     return {
       average,
       best,
@@ -82,21 +89,27 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
     }
   };
 
+  // --- Show a new direction and set up auto-advance ---
   const showNewDirection = useCallback(() => {
+    clearTimeoutRef();
+    roundActiveRef.current = true;
     const randomDirection = directions[Math.floor(Math.random() * directions.length)];
     setCurrentDirection(randomDirection);
     setShowDirection(true);
     setDirectionTime(Date.now());
-    
-    // Auto-advance if no swipe within 2 seconds
-    setTimeout(() => {
-      if (showDirection) {
-        nextRound();
+    // Auto-advance if no swipe within 4 seconds
+    timeoutRef.current = setTimeout(() => {
+      if (roundActiveRef.current) {
+        roundActiveRef.current = false;
+        startNextRound();
       }
-    }, 2000);
-  }, [showDirection]);
+    }, 4000);
+  }, [directions]);
 
-  const nextRound = useCallback(() => {
+  // --- Start the next round after a delay ---
+  const startNextRound = useCallback(() => {
+    clearTimeoutRef();
+    roundActiveRef.current = false;
     setShowDirection(false);
     setCurrentDirection(null);
     setRounds(prevRounds => {
@@ -106,34 +119,40 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
         setGameEndTime(Date.now());
         return prevRounds;
       } else {
-        // Start next direction after delay
-        setTimeout(() => {
-          const delay = Math.random() * 1500 + 1000; // 1-2.5 seconds
-          setTimeout(showNewDirection, delay);
-        }, 500);
+        // Start next direction after delay (2-4s)
+        const delay = Math.random() * 2000 + 2000;
+        timeoutRef.current = setTimeout(() => {
+          showNewDirection();
+        }, delay);
         return newRounds;
       }
     });
-  }, [showNewDirection]);
+  }, [showNewDirection, totalRounds]);
 
   useEffect(() => {
     setGameStartTime(Date.now());
-    // Start first direction
-    const delay = Math.random() * 1500 + 1000;
-    setTimeout(showNewDirection, delay);
+    clearTimeoutRef();
+    roundActiveRef.current = false;
+    // Start first direction after delay (2-4s)
+    const delay = Math.random() * 2000 + 2000;
+    timeoutRef.current = setTimeout(() => {
+      showNewDirection();
+    }, delay);
+    return clearTimeoutRef;
   }, [showNewDirection]);
 
   const handleSwipe = (direction: Direction) => {
-    if (!showDirection || !currentDirection) return;
-    
+    if (!showDirection || !currentDirection || !roundActiveRef.current) return;
     if (direction === currentDirection) {
       // Correct swipe
+      roundActiveRef.current = false;
+      clearTimeoutRef();
       const reactionTime = Date.now() - directionTime;
       const points = Math.max(0, Math.floor(800 - reactionTime / 3));
       setScore(prevScore => prevScore + points);
       setReactionTimes(prev => [...prev, reactionTime]);
       setCorrectAnswers(c => c + 1);
-      nextRound();
+      startNextRound();
     } else {
       // Wrong swipe - penalty
       setWrongAnswers(w => w + 1);
@@ -145,7 +164,6 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
     const stats = calculateStats();
     const totalTime = gameEndTime - gameStartTime;
     const accuracy = correctAnswers > 0 ? Math.round((correctAnswers / (correctAnswers + wrongAnswers)) * 100) : 0;
-    
     return (
       <div className="w-full min-h-[calc(100vh-10rem)] flex items-center justify-center bg-luxury-black p-6">
         <div className="w-full max-w-md bg-luxury-black rounded-2xl shadow-2xl border-2 border-luxury-gold p-6 flex flex-col items-center animate-fade-in">
@@ -233,7 +251,7 @@ const SwipeGame: React.FC<SwipeGameProps> = ({ onFinish }) => {
             </button>
             <button
               className="flex-1 px-4 py-2 bg-luxury-white text-luxury-black font-semibold rounded hover:bg-luxury-gold transition"
-              onClick={() => navigator.share && navigator.share({ title: 'Swipe Results', text: `Score: ${score}, Accuracy: ${accuracy}%, Avg: ${stats?.average ?? 0}ms`, url: window.location.href })}
+              onClick={() => navigator.share && navigator.share({ title: 'Swipe Results', text: `Score: {score}, Accuracy: {accuracy}%, Avg: {stats?.average ?? 0}ms`, url: window.location.href })}
             >
               Share
             </button>
