@@ -31,24 +31,23 @@ const RotationGame: React.FC<RotationGameProps> = ({ onFinish }) => {
   const shapeTypes = ['▲', '■', '◆', '●'];
 
   const generateRound = useCallback(() => {
-    const targetShape = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
-    const targetRotation = Math.floor(Math.random() * 4) * 90; // 0, 90, 180, 270 degrees
+    const triangle = '▲';
+    // Pick two different rotations
+    const allRotations = [0, 90, 180, 270];
+    const oddRotation = allRotations[Math.floor(Math.random() * allRotations.length)];
+    let otherRotations = allRotations.filter(r => r !== oddRotation);
+    const commonRotation = otherRotations[Math.floor(Math.random() * otherRotations.length)];
+    // Pick a random index for the odd triangle
+    const oddIndex = Math.floor(Math.random() * 6);
     const newShapes = [];
-    
-    // Generate 6 shapes with one being the target
     for (let i = 0; i < 6; i++) {
-      const shape = i === 0 ? targetShape : shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
-      const rotation = i === 0 ? targetRotation : Math.floor(Math.random() * 4) * 90;
-      const isTarget = i === 0;
-      newShapes.push({ id: i, shape, rotation, isTarget });
+      if (i === oddIndex) {
+        newShapes.push({ id: i, shape: triangle, rotation: oddRotation, isTarget: true });
+      } else {
+        newShapes.push({ id: i, shape: triangle, rotation: commonRotation, isTarget: false });
+      }
     }
-    
-    // Shuffle the array
-    for (let i = newShapes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newShapes[i], newShapes[j]] = [newShapes[j], newShapes[i]];
-    }
-    
+    // Shuffle the array (optional, but oddIndex already randomizes position)
     setShapes(newShapes);
     setFeedback("");
     setRoundStartTime(Date.now());

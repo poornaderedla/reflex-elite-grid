@@ -202,10 +202,7 @@ const NumbersOrderGame: React.FC<NumbersOrderGameProps> = ({ onFinish }) => {
             onClick={() => handleClick(number)}
             className={`
               w-24 h-24 bg-luxury-black border-2 rounded-lg text-2xl font-bold transition-all
-              ${number === currentNumber 
-                ? 'border-luxury-gold text-luxury-gold bg-luxury-gold/10' 
-                : 'border-luxury-white/20 text-luxury-white hover:border-luxury-gold/50 hover:bg-luxury-gold/10'
-              }
+              border-luxury-white/20 text-luxury-white hover:border-luxury-gold/50 hover:bg-luxury-gold/10
               hover:scale-105 active:scale-95
             `}
           >

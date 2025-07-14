@@ -33,6 +33,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [lastMoveTime, setLastMoveTime] = useState<number>(0);
   const [wrongClicks, setWrongClicks] = useState<number>(0);
+  const [betweenRounds, setBetweenRounds] = useState<boolean>(false);
 
   const symbols = ["🔴", "🔵", "🟢", "🟡", "🟣", "🟠", "⚫", "⚪"];
 
@@ -64,6 +65,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
 
   useEffect(() => {
     if (flippedCards.length === 2) {
+      setBetweenRounds(true);
       const [first, second] = flippedCards;
       const firstCard = cards[first];
       const secondCard = cards[second];
@@ -78,6 +80,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
           ));
           setMatchedPairs(prev => prev + 1);
           setFlippedCards([]);
+          setBetweenRounds(false);
         }, 1000);
       } else {
         // No match - count as wrong click
@@ -89,6 +92,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
               : card
           ));
           setFlippedCards([]);
+          setBetweenRounds(false);
         }, 1000);
       }
       setMoves(prev => prev + 1);
@@ -105,6 +109,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
   }, [matchedPairs, moves, gameStartTime]);
 
   const handleCardClick = (cardId: number) => {
+    if (betweenRounds) return;
     if (flippedCards.length === 2) return;
     if (cards[cardId].isFlipped || cards[cardId].isMatched) return;
 
@@ -275,7 +280,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
               ${card.isMatched ? 'opacity-60' : ''}
             `}
             onClick={() => handleCardClick(card.id)}
-            disabled={card.isFlipped || card.isMatched}
+            disabled={card.isFlipped || card.isMatched || betweenRounds}
           >
             {card.isFlipped || card.isMatched ? card.symbol : '?'}
           </button>

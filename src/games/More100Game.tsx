@@ -30,13 +30,17 @@ const More100Game: React.FC<More100GameProps> = ({ onFinish }) => {
 
   const generateRound = useCallback(() => {
     const newNumbers = [];
-    
-    // Generate 6 random numbers (50-150)
+    // Pick a random index for the >100 number
+    const gt100Index = Math.floor(Math.random() * 6);
     for (let i = 0; i < 6; i++) {
-      const num = Math.floor(Math.random() * 101) + 50; // 50-150
-      newNumbers.push(num);
+      if (i === gt100Index) {
+        // One number > 100 (101-150)
+        newNumbers.push(Math.floor(Math.random() * 50) + 101);
+      } else {
+        // The rest <= 100 (50-100)
+        newNumbers.push(Math.floor(Math.random() * 51) + 50);
+      }
     }
-    
     setNumbers(newNumbers);
     setFeedback("");
     setRoundStartTime(Date.now());
@@ -225,10 +229,7 @@ const More100Game: React.FC<More100GameProps> = ({ onFinish }) => {
             onClick={() => handleNumberClick(number)}
             className={`
               w-32 h-32 bg-luxury-black border-2 rounded-lg text-2xl font-bold transition-all
-              ${number > 100 
-                ? 'border-luxury-gold text-luxury-gold hover:bg-luxury-gold/10' 
-                : 'border-luxury-white/20 text-luxury-white hover:border-luxury-gold/50 hover:bg-luxury-gold/10'
-              }
+              border-luxury-white/20 text-luxury-white hover:border-luxury-gold/50 hover:bg-luxury-gold/10
               hover:scale-105 active:scale-95
             `}
           >

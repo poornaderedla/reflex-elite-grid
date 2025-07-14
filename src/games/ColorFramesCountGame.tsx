@@ -5,6 +5,7 @@ interface ColorFramesCountGameProps {
   onFinish: (score: number, time: number) => void;
 }
 
+// Use maximally distinct colors
 const COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
 
 const ColorFramesCountGame: React.FC<ColorFramesCountGameProps> = ({ onFinish }) => {
@@ -95,9 +96,10 @@ const ColorFramesCountGame: React.FC<ColorFramesCountGameProps> = ({ onFinish })
       gridFrames.push(target);
     }
     
-    // Fill remaining slots with other colors
+    // Fill remaining slots with other colors (not the target color)
+    const otherColors = COLORS.filter(c => c !== target);
     while (gridFrames.length < 20) {
-      const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const randomColor = otherColors[Math.floor(Math.random() * otherColors.length)];
       gridFrames.push(randomColor);
     }
     
@@ -126,10 +128,10 @@ const ColorFramesCountGame: React.FC<ColorFramesCountGameProps> = ({ onFinish })
   }, [generateRound]);
 
   const handleSubmit = () => {
-    const userCount = parseInt(userAnswer);
+    const userCount = parseInt(userAnswer.trim(), 10);
     const timeTaken = (Date.now() - roundStartTime) / 1000;
     
-    if (userCount === correctCount) {
+    if (!isNaN(userCount) && userCount === correctCount) {
       const roundScore = Math.floor(100 + Math.max(0, (6 - timeTaken) * 10));
       setScore(prevScore => prevScore + roundScore);
       setReactionTimes(prev => [...prev, timeTaken]);
@@ -275,14 +277,18 @@ const ColorFramesCountGame: React.FC<ColorFramesCountGameProps> = ({ onFinish })
             {frames.map((color, index) => (
               <div
                 key={index}
-                className={`${getColorClass(color)} rounded border border-luxury-white/30`}
+                className={`${getColorClass(color)} rounded border-2 border-white shadow`}
               />
             ))}
           </div>
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center space-y-4">
-              <div className="text-sm text-luxury-white/70">How many {targetColor} frames did you see?</div>
+              <div className="text-sm text-luxury-white/70 flex items-center justify-center gap-2">
+                How many
+                <span className={`inline-block w-5 h-5 rounded border-2 border-white ${getColorClass(targetColor)}`}></span>
+                <span className="font-bold">{targetColor.charAt(0).toUpperCase() + targetColor.slice(1)}</span> frames did you see?
+              </div>
               <input
                 type="number"
                 value={userAnswer}

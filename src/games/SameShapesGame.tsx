@@ -34,21 +34,18 @@ const SameShapesGame: React.FC<SameShapesGameProps> = ({ onFinish }) => {
 
   const generateRound = useCallback(() => {
     const target = shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
-    const newShapes = [];
-    
-    // Generate 6 shapes with one being the target
-    for (let i = 0; i < 6; i++) {
-      const shape = i === 0 ? target : shapeTypes[Math.floor(Math.random() * shapeTypes.length)];
+    // Create a list of shapes excluding the target
+    const otherShapes = shapeTypes.filter(s => s !== target);
+    // Shuffle otherShapes and pick 5
+    const shuffledOtherShapes = [...otherShapes].sort(() => Math.random() - 0.5).slice(0, 5);
+    // Insert the target shape at a random position
+    const positions = [0,1,2,3,4,5];
+    const targetPos = Math.floor(Math.random() * 6);
+    const newShapes = positions.map((pos, idx) => {
+      const shape = pos === targetPos ? target : shuffledOtherShapes.shift();
       const color = colors[Math.floor(Math.random() * colors.length)];
-      newShapes.push({ id: i, shape, color });
-    }
-    
-    // Shuffle the array
-    for (let i = newShapes.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newShapes[i], newShapes[j]] = [newShapes[j], newShapes[i]];
-    }
-    
+      return { id: pos, shape: shape as string, color };
+    });
     setShapes(newShapes);
     setTargetShape(target);
     setFeedback("");
@@ -83,7 +80,7 @@ const SameShapesGame: React.FC<SameShapesGameProps> = ({ onFinish }) => {
         setGameOver(true);
         setGameEndTime(Date.now());
       }
-    }, 1500);
+    }, 2500);
   };
 
   // Calculate stats
@@ -216,6 +213,7 @@ const SameShapesGame: React.FC<SameShapesGameProps> = ({ onFinish }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-4 space-y-4">
+      {/* Removed betweenRounds check */}
       <div className="text-center space-y-2">
         <div className="text-lg">Score: {score}</div>
         <div className="text-sm text-luxury-white/70">Round: {round}/8</div>
@@ -226,6 +224,7 @@ const SameShapesGame: React.FC<SameShapesGameProps> = ({ onFinish }) => {
         )}
       </div>
 
+      {/* Removed betweenRounds checks in render */}
       <div className="text-center space-y-2">
         <div className="text-2xl font-bold text-luxury-gold">Find this shape:</div>
         <div className="text-6xl text-luxury-gold">{targetShape}</div>
@@ -247,6 +246,7 @@ const SameShapesGame: React.FC<SameShapesGameProps> = ({ onFinish }) => {
               }
               hover:scale-105 active:scale-95
             `}
+            // Removed disabled={betweenRounds}
           >
             {shape.shape}
           </button>
