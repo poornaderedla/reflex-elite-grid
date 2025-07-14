@@ -239,7 +239,7 @@ const DotsCountGame: React.FC<DotsCountGameProps> = ({ onFinish }) => {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2 flex flex-col items-center">
         <input
           type="number"
           value={userAnswer}
@@ -249,14 +249,16 @@ const DotsCountGame: React.FC<DotsCountGameProps> = ({ onFinish }) => {
           placeholder="Count"
           autoFocus
         />
-        
         <button
           onClick={handleSubmit}
           disabled={!userAnswer}
-          className="btn-primary w-32"
+          className="btn-primary w-32 mt-2"
         >
           Submit
         </button>
+        {feedback && (
+          <div className={`text-sm font-medium mt-2 ${feedback.includes("Correct") ? "text-green-400" : "text-red-400"}`}>{feedback}</div>
+        )}
       </div>
 
       <div className="text-center text-xs text-luxury-white/50">

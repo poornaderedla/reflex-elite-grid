@@ -28,17 +28,19 @@ const EqualNumbersGame: React.FC<EqualNumbersGameProps> = ({ onFinish }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState<number>(0);
   const [wrongAnswers, setWrongAnswers] = useState<number>(0);
+  const [clickedTargetIndices, setClickedTargetIndices] = useState<number[]>([]);
+  const [targetIndices, setTargetIndices] = useState<number[]>([]);
 
   const generateRound = useCallback(() => {
     const target = Math.floor(Math.random() * 9) + 1;
     const newNumbers = [];
-    
+    const indices: number[] = [];
     // Add 2-4 instances of target number
     const targetCount = Math.floor(Math.random() * 3) + 2;
     for (let i = 0; i < targetCount; i++) {
       newNumbers.push(target);
+      indices.push(i); // These will be shuffled, so we'll recalc below
     }
-    
     // Fill remaining slots with random numbers (not target)
     while (newNumbers.length < 16) {
       const randomNum = Math.floor(Math.random() * 9) + 1;
@@ -46,17 +48,21 @@ const EqualNumbersGame: React.FC<EqualNumbersGameProps> = ({ onFinish }) => {
         newNumbers.push(randomNum);
       }
     }
-    
-    // Shuffle array
+    // Shuffle array and track target indices
     for (let i = newNumbers.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [newNumbers[i], newNumbers[j]] = [newNumbers[j], newNumbers[i]];
     }
-    
+    // Find all indices of the target number in the shuffled array
+    const shuffledTargetIndices = newNumbers
+      .map((num, idx) => (num === target ? idx : -1))
+      .filter(idx => idx !== -1);
     setNumbers(newNumbers);
     setTargetNumber(target);
     setFeedback("");
     setRoundStartTime(Date.now());
+    setClickedTargetIndices([]);
+    setTargetIndices(shuffledTargetIndices);
   }, []);
 
   useEffect(() => {
@@ -64,30 +70,35 @@ const EqualNumbersGame: React.FC<EqualNumbersGameProps> = ({ onFinish }) => {
     generateRound();
   }, [generateRound]);
 
-  const handleNumberClick = (clickedNumber: number) => {
-    const reactionTime = Date.now() - roundStartTime;
-    
-    if (clickedNumber === targetNumber) {
+  const handleNumberClick = (clickedNumber: number, index: number) => {
+    if (clickedNumber === targetNumber && !clickedTargetIndices.includes(index)) {
+      const reactionTime = Date.now() - roundStartTime;
       const roundScore = Math.floor(100 + Math.max(0, (3 - reactionTime / 1000) * 20));
       setScore(prevScore => prevScore + roundScore);
       setCorrectAnswers(prev => prev + 1);
       setReactionTimes(prev => [...prev, reactionTime]);
+      setClickedTargetIndices(prev => {
+        const updated = [...prev, index];
+        // If all target indices have been clicked, move to next round
+        if (updated.length === targetIndices.length) {
+          setTimeout(() => {
+            if (round < 10) {
+              setRound(prev => prev + 1);
+              generateRound();
+            } else {
+              setGameOver(true);
+              setGameEndTime(Date.now());
+            }
+          }, 300); // Short delay for feedback
+        }
+        return updated;
+      });
       setFeedback(`Correct! +${roundScore}`);
-    } else {
+    } else if (clickedNumber !== targetNumber) {
       setWrongAnswers(prev => prev + 1);
       setFeedback("Wrong number!");
+      setTimeout(() => setFeedback("") , 500);
     }
-
-    setTimeout(() => {
-      setFeedback("");
-      if (round < 10) {
-        setRound(prev => prev + 1);
-        generateRound();
-      } else {
-        setGameOver(true);
-        setGameEndTime(Date.now());
-      }
-    }, 1000);
   };
 
   // Calculate stats
@@ -239,8 +250,10 @@ const EqualNumbersGame: React.FC<EqualNumbersGameProps> = ({ onFinish }) => {
         {numbers.map((number, index) => (
           <button
             key={index}
-            onClick={() => handleNumberClick(number)}
-            className="w-18 h-18 bg-luxury-black border border-luxury-white/20 rounded-lg text-xl font-bold text-luxury-white hover:border-luxury-gold/50 hover:bg-luxury-gold/10 transition-all"
+            onClick={() => handleNumberClick(number, index)}
+            className={`w-18 h-18 bg-luxury-black border border-luxury-white/20 rounded-lg text-xl font-bold text-luxury-white hover:border-luxury-gold/50 hover:bg-luxury-gold/10 transition-all
+              ${clickedTargetIndices.includes(index) ? 'opacity-50 pointer-events-none' : ''}`}
+            disabled={clickedTargetIndices.includes(index)}
           >
             {number}
           </button>

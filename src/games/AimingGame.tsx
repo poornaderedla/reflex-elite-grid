@@ -18,7 +18,7 @@ const reactionTimeBenchmarks = {
 const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
   const [score, setScore] = useState<number>(0);
   const [gameStartTime, setGameStartTime] = useState<number>(0);
-  const [targets, setTargets] = useState<Array<{ id: number; x: number; y: number; size: number }>>([]);
+  const [targets, setTargets] = useState<Array<{ id: number; x: number; y: number; size: number; spawnTime: number }>>([]);
   const [timeLeft, setTimeLeft] = useState<number>(30);
   const [targetsHit, setTargetsHit] = useState<number>(0);
   const [gameOver, setGameOver] = useState<boolean>(false);
@@ -26,6 +26,7 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [missedTargets, setMissedTargets] = useState<number>(0);
+
 
   // Add a ref to track gameOver for use in setTimeout
   const gameOverRef = useRef(false);
@@ -36,12 +37,13 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
     const size = 40 + Math.random() * 40; // 40-80px
     const x = size/2 + Math.random() * (320 - size); // Keep within bounds
     const y = size/2 + Math.random() * (320 - size);
+    const spawnTime = Date.now();
     
-    const newTarget = { id, x, y, size };
+    const newTarget = { id, x, y, size, spawnTime };
     
     setTargets(prev => [...prev, newTarget]);
     
-    // Remove target after 2 seconds if not hit
+    // Remove target after 3 seconds if not hit (longer lifespan)
     setTimeout(() => {
       setTargets(prev => {
         if (prev.some(t => t.id === id)) {
@@ -52,14 +54,14 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
         }
         return prev.filter(t => t.id !== id);
       });
-    }, 2000);
+    }, 3000);
   }, []);
 
   useEffect(() => {
     setGameStartTime(Date.now());
     
-    // Generate targets every 800ms
-    const interval = setInterval(generateTarget, 800);
+    // Generate targets every 1200ms (slower than before)
+    const interval = setInterval(generateTarget, 1200);
     
     return () => clearInterval(interval);
   }, [generateTarget]);
@@ -75,15 +77,22 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
   }, [timeLeft]);
 
   const handleTargetHit = (targetId: number, targetSize: number) => {
-    // Record reaction time (simplified - using target size as proxy for difficulty)
-    const reactionTime = Math.max(100, 500 - targetSize * 2); // Smaller targets = faster reaction time
+    // Find the target to get its spawn time
+    const target = targets.find(t => t.id === targetId);
+    if (!target) return;
+    
+    // Calculate actual reaction time
+    const reactionTime = Date.now() - target.spawnTime;
     setReactionTimes(prev => [...prev, reactionTime]);
     
     // Remove the hit target
     setTargets(prev => prev.filter(t => t.id !== targetId));
     
-    // Calculate score based on target size (smaller = more points)
-    const baseScore = Math.floor(1000 / targetSize * 10);
+    // Calculate score based on reaction time and target size
+    const timeBonus = Math.max(0, 2000 - reactionTime) / 20; // Faster = more bonus
+    const sizeBonus = Math.max(1, 80 - targetSize) / 2; // Smaller = more bonus
+    const baseScore = Math.floor(50 + timeBonus + sizeBonus);
+    
     setScore(prevScore => prevScore + baseScore);
     setTargetsHit(prev => prev + 1);
   };
@@ -214,40 +223,47 @@ const AimingGame: React.FC<AimingGameProps> = ({ onFinish }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-4 space-y-4">
+      {/* Header */}
       <div className="text-center space-y-2">
-        <div className="text-lg">Score: {score}</div>
+        <div className="text-xl font-bold text-luxury-gold">Score: {score}</div>
         <div className="text-sm text-luxury-white/70">
           Time: {timeLeft}s | Hits: {targetsHit}
         </div>
       </div>
       
-      <div className="relative w-80 h-80 bg-luxury-black border-2 border-luxury-white/20 rounded-lg overflow-hidden">
-        {/* Crosshair in center */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <Crosshair className="h-6 w-6 text-luxury-white/30" />
-        </div>
+      {/* Game Area */}
+      <div className="relative w-full max-w-sm h-80 bg-luxury-black border-2 border-luxury-white/20 rounded-xl overflow-hidden shadow-2xl">
         
         {/* Targets */}
         {targets.map((target) => (
           <button
             key={target.id}
-            className="absolute rounded-full bg-luxury-gold/80 hover:bg-luxury-gold transition-all hover:scale-110 active:scale-95 flex items-center justify-center"
+            className="absolute rounded-full bg-gradient-to-br from-luxury-gold to-yellow-400 hover:from-yellow-400 hover:to-luxury-gold transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center shadow-lg border-2 border-white/20"
             style={{
               left: `${target.x}px`,
               top: `${target.y}px`,
               width: `${target.size}px`,
               height: `${target.size}px`,
               transform: 'translate(-50%, -50%)',
+              touchAction: 'manipulation', // Optimize for mobile touch
             }}
             onClick={() => handleTargetHit(target.id, target.size)}
+            onTouchStart={(e) => {
+              e.preventDefault(); // Prevent double-tap zoom on mobile
+              handleTargetHit(target.id, target.size);
+            }}
           >
-            <Target className="h-1/2 w-1/2 text-luxury-black" />
+            <Target className="h-1/2 w-1/2 text-luxury-black drop-shadow-sm" />
           </button>
         ))}
       </div>
       
-      <div className="text-center text-xs text-luxury-white/50">
-        Tap targets quickly! Smaller targets = more points
+      {/* Instructions */}
+      <div className="text-center space-y-2">
+        <div className="text-lg font-semibold text-luxury-gold">Tap Targets Fast!</div>
+        <div className="text-xs text-luxury-white/60 max-w-sm">
+          Smaller targets and faster reactions give more points. Test your speed and accuracy!
+        </div>
       </div>
     </div>
   );

@@ -87,7 +87,7 @@ const ExcessCellsGame: React.FC<ExcessCellsGameProps> = ({ onFinish }) => {
     });
     
     // Add some excess cells of random colors
-    const excessCount = 3 + Math.floor(Math.random() * 3); // 3-5 excess
+    const excessCount = 6 + Math.floor(Math.random() * 4); // 6-9 excess
     const excessIndices = new Set<number>();
     
     for (let i = 0; i < excessCount; i++) {

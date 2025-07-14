@@ -211,44 +211,59 @@ const LongestLineGame: React.FC<LongestLineGameProps> = ({ onFinish }) => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-4 space-y-4">
-      <div className="text-center space-y-2">
-        <div className="text-lg">Score: {score}</div>
-        <div className="text-sm text-luxury-white/70">Round: {round}/8</div>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-6 space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-3">
+        <div className="text-xl font-bold text-luxury-gold">Score: {score}</div>
+        <div className="text-sm text-luxury-white/70">Round {round} of 8</div>
         {feedback && (
-          <div className={`text-sm font-medium ${feedback.includes("Correct") ? "text-green-400" : "text-red-400"}`}>
+          <div className={`text-sm font-medium px-4 py-2 rounded-lg ${
+            feedback.includes("Correct") 
+              ? "text-green-400 bg-green-400/10 border border-green-400/30" 
+              : "text-red-400 bg-red-400/10 border border-red-400/30"
+          }`}>
             {feedback}
           </div>
         )}
       </div>
 
+      {/* Instructions */}
       <div className="text-center space-y-2">
-        <div className="text-2xl font-bold text-luxury-gold">Click the longest line</div>
-        <div className="text-sm text-luxury-white/70">Find the line with the greatest length</div>
+        <div className="text-2xl font-bold text-luxury-gold">Find the Longest Line</div>
+        <div className="text-sm text-luxury-white/70">Click the longest colored line</div>
       </div>
 
-      <div className="space-y-4 w-80">
-        {lines.map((line) => (
-          <button
-            key={line.id}
-            onClick={() => handleLineClick(line)}
-            className={`
-              w-full h-8 rounded-lg transition-all hover:scale-105 active:scale-95
-              ${line.color === 'red' ? 'bg-red-500' : 
-                line.color === 'blue' ? 'bg-blue-500' :
-                line.color === 'green' ? 'bg-green-500' :
-                line.color === 'yellow' ? 'bg-yellow-500' :
-                line.color === 'purple' ? 'bg-purple-500' :
-                'bg-orange-500'
-              }
-            `}
-            style={{ width: `${line.length}%` }}
-          />
+      {/* Lines Container */}
+      <div className="w-full max-w-md space-y-6">
+        {lines.map((line, index) => (
+          <div key={line.id} className="flex items-center space-x-4">
+            <button
+              onClick={() => handleLineClick(line)}
+              className={`
+                h-12 rounded-xl transition-all duration-200 
+                hover:scale-105 active:scale-95 shadow-lg
+                ${line.color === 'red' ? 'bg-red-500 hover:bg-red-400' : 
+                  line.color === 'blue' ? 'bg-blue-500 hover:bg-blue-400' :
+                  line.color === 'green' ? 'bg-green-500 hover:bg-green-400' :
+                  line.color === 'yellow' ? 'bg-yellow-500 hover:bg-yellow-400' :
+                  line.color === 'purple' ? 'bg-purple-500 hover:bg-purple-400' :
+                  'bg-orange-500 hover:bg-orange-400'
+                }
+              `}
+              style={{ 
+                width: `${Math.max(20, line.length)}%`,
+                minWidth: '60px'
+              }}
+            />
+            {/* Spacer to push lines to the left */}
+            <div className="flex-1" />
+          </div>
         ))}
       </div>
 
-      <div className="text-center text-xs text-luxury-white/50">
-        Click the longest line as fast as possible
+      {/* Footer */}
+      <div className="text-center text-xs text-luxury-white/50 max-w-sm">
+        Test your visual perception and reaction speed
       </div>
     </div>
   );

@@ -32,6 +32,7 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
   const [reactionTimes, setReactionTimes] = useState<number[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [lastMoveTime, setLastMoveTime] = useState<number>(0);
+  const [wrongClicks, setWrongClicks] = useState<number>(0);
 
   const symbols = ["🔴", "🔵", "🟢", "🟡", "🟣", "🟠", "⚫", "⚪"];
 
@@ -79,7 +80,8 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
           setFlippedCards([]);
         }, 1000);
       } else {
-        // No match
+        // No match - count as wrong click
+        setWrongClicks(prev => prev + 1);
         setTimeout(() => {
           setCards(prev => prev.map(card => 
             card.id === first || card.id === second 
@@ -188,6 +190,10 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onFinish }) => {
             <div className="flex justify-between text-base">
               <span className="text-luxury-white/60">Pairs Found:</span>
               <span>{matchedPairs}/8</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-luxury-white/60">Wrong Clicks:</span>
+              <span className="text-red-400">{wrongClicks}</span>
             </div>
             <div className="flex justify-between text-base">
               <span className="text-luxury-white/60">Avg. Move Time:</span>

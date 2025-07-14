@@ -214,7 +214,7 @@ const More100Game: React.FC<More100GameProps> = ({ onFinish }) => {
       </div>
 
       <div className="text-center space-y-2">
-        <div className="text-2xl font-bold text-luxury-gold">Click numbers > 100</div>
+        <div className="text-2xl font-bold text-luxury-gold">Click numbers {'>'}{' '}100</div>
         <div className="text-sm text-luxury-white/70">Find numbers greater than 100</div>
       </div>
 

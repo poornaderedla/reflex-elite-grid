@@ -21,7 +21,6 @@ const PeripheralVisionGame: React.FC<PeripheralVisionGameProps> = ({ onFinish })
   const [numbers, setNumbers] = useState<number[]>([]);
   const [largestNumber, setLargestNumber] = useState<number>(0);
   const [showNumbers, setShowNumbers] = useState<boolean>(false);
-  const [feedback, setFeedback] = useState<string>("");
   const [roundStartTime, setRoundStartTime] = useState<number>(0);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [gameEndTime, setGameEndTime] = useState<number | null>(null);
@@ -46,7 +45,6 @@ const PeripheralVisionGame: React.FC<PeripheralVisionGameProps> = ({ onFinish })
     setNumbers(newNumbers);
     setLargestNumber(largest);
     setShowNumbers(false);
-    setFeedback("");
     setRoundStartTime(Date.now());
     
     // Show numbers after 1 second
@@ -57,6 +55,21 @@ const PeripheralVisionGame: React.FC<PeripheralVisionGameProps> = ({ onFinish })
     // Hide numbers after 2 seconds
     setTimeout(() => {
       setShowNumbers(false);
+      
+      // Auto-advance to next round after numbers disappear
+      setTimeout(() => {
+        setRound(prev => {
+          const nextRound = prev + 1;
+          if (nextRound <= 10) {
+            generateRound();
+            return nextRound;
+          } else {
+            setGameOver(true);
+            setGameEndTime(Date.now());
+            return prev;
+          }
+        });
+      }, 1000); // Wait 1 second after numbers disappear before advancing
     }, 3000);
   }, []);
 
@@ -74,22 +87,9 @@ const PeripheralVisionGame: React.FC<PeripheralVisionGameProps> = ({ onFinish })
       setScore(prevScore => prevScore + 100);
       setCorrectAnswers(prev => prev + 1);
       setReactionTimes(prev => [...prev, reactionTime]);
-      setFeedback("Correct! +100");
     } else {
       setWrongAnswers(prev => prev + 1);
-      setFeedback(`Wrong! Largest was ${largestNumber}`);
     }
-
-    setTimeout(() => {
-      setFeedback("");
-      if (round < 10) {
-        setRound(prev => prev + 1);
-        generateRound();
-      } else {
-        setGameOver(true);
-        setGameEndTime(Date.now());
-      }
-    }, 1500);
   };
 
   // Calculate stats
@@ -223,13 +223,11 @@ const PeripheralVisionGame: React.FC<PeripheralVisionGameProps> = ({ onFinish })
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] p-4 space-y-4">
       <div className="text-center space-y-2">
-        <div className="text-lg">Score: {score}</div>
+        <div className="text-xl font-bold text-luxury-gold">Score: {score}</div>
         <div className="text-sm text-luxury-white/70">Round: {round}/10</div>
-        {feedback && (
-          <div className={`text-sm font-medium ${feedback.includes("Correct") ? "text-green-400" : "text-red-400"}`}>
-            {feedback}
-          </div>
-        )}
+        <div className="text-sm text-luxury-white/60">
+          Correct: {correctAnswers} | Wrong: {wrongAnswers}
+        </div>
       </div>
       
       <div className="text-center space-y-2">

@@ -101,19 +101,20 @@ const ClickLimitGame: React.FC<ClickLimitGameProps> = ({ onFinish }) => {
     return () => clearTimeout(timer);
   }, [timeLeft, isActive]);
 
-  const endRound = () => {
+  const endRound = (finalClickCount?: number) => {
     setIsActive(false);
-    const success = clickCount >= targetClicks;
+    const actualClickCount = finalClickCount ?? clickCount;
+    const success = actualClickCount >= targetClicks;
     const timeTaken = (Date.now() - roundStartTime) / 1000;
     
     if (success) {
-      const roundScore = Math.floor(100 + (clickCount - targetClicks) * 5 + (10 - timeTaken) * 10);
+      const roundScore = Math.floor(100 + (actualClickCount - targetClicks) * 5 + (10 - timeTaken) * 10);
       setScore(prevScore => prevScore + roundScore);
       setCorrectAnswers(c => c + 1);
       setFeedback(`Success! +${roundScore} points`);
     } else {
       setWrongAnswers(w => w + 1);
-      setFeedback(`Failed! Only ${clickCount}/${targetClicks} clicks`);
+      setFeedback(`Failed! Only ${actualClickCount}/${targetClicks} clicks`);
     }
 
     setTimeout(() => {
@@ -137,10 +138,14 @@ const ClickLimitGame: React.FC<ClickLimitGameProps> = ({ onFinish }) => {
         setLastClickTime(currentTime);
       }
       
-      setClickCount(prev => prev + 1);
-      if (clickCount + 1 >= targetClicks) {
-        endRound();
-      }
+      setClickCount(prev => {
+        const newCount = prev + 1;
+        if (newCount >= targetClicks) {
+          // Pass the actual click count to endRound
+          setTimeout(() => endRound(newCount), 0);
+        }
+        return newCount;
+      });
     }
   };
 

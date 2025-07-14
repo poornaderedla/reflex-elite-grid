@@ -311,7 +311,7 @@ const SixDotsGame: React.FC<SixDotsGameProps> = ({ onFinish }) => {
       <div className="text-center text-xs text-luxury-white/50">
         {isSequencePlaying 
           ? "Watch the sequence carefully..." 
-          : `Tap the dots in order (${currentSequenceIndex + 1}/${sequence.length})`}
+          : `Tap the dots in order (${currentSequenceIndex}/${sequence.length})`}
       </div>
     </div>
   );
