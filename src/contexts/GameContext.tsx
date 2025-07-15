@@ -98,7 +98,7 @@ const GAMES: Game[] = [
     name: "Swipe Direction",
     description: "Swipe in the correct direction",
     instructions: "Quickly swipe in the direction shown by the arrow.",
-    icon: "👆",
+    icon: "↔️",
   },
   {
     id: "excessCells",
